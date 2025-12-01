@@ -8,6 +8,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Courier+Prime:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- ================================================================= -->
+    <!-- 🔥 数据统计代码区 (ANALYTICS)                                      -->
+    <!-- ================================================================= -->
+    
+    <!-- 粘贴在这里 (Paste PostHog Snippet Here) -->
+    
+    <!-- ================================================================= -->
+
     <style>
       body {
         background-color: #050505;
@@ -109,22 +118,18 @@
   <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.0.24"
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "@google/generative-ai": "https://esm.sh/@google/generative-ai@0.12.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.292.0"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
     <div class="scanlines fixed inset-0 z-40 opacity-20 pointer-events-none"></div>
     <div class="scan-bar"></div>
     <div class="noise"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>
