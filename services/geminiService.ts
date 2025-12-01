@@ -4,17 +4,21 @@ import { GameState, SimulationResponse, TurnInput, SceneType } from "../types";
 import { SCENE_TITLES } from "../constants";
 
 // Initialize Gemini Client
-// CRITICAL: Keep using import.meta.env for Vercel
-const apiKey = import.meta.env.VITE_API_KEY || process.env.API_KEY;
+// STRICT: Only read from Vite/Vercel environment variables
+const apiKey = import.meta.env.VITE_API_KEY;
 
 // Debug Log
 console.log("🔍 System Check: API Key Loaded?", !!apiKey); 
 
 if (!apiKey) {
-  console.error("❌ FATAL ERROR: API Key is missing.");
+  console.error("❌ FATAL ERROR: API Key is missing. Please check Vercel Settings -> Environment Variables.");
 }
 
-const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+// CRITICAL FIX: Explicitly set apiVersion to 'v1beta' where gemini-1.5-flash lives
+const ai = new GoogleGenAI({ 
+  apiKey: apiKey || '',
+  apiVersion: 'v1beta'
+});
 
 // Define the schema for the simulation output (Text)
 const simulationSchema: Schema = {
@@ -145,9 +149,9 @@ export const processTurn = async (
 
   try {
     // 1. Generate Text Simulation
-    // CHANGED: Using 'gemini-pro' (classic) to avoid 404s on older keys
+    // Using gemini-1.5-flash with v1beta is the most standard configuration
     const response = await ai.models.generateContent({
-      model: 'gemini-pro', 
+      model: 'gemini-1.5-flash', 
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -160,8 +164,6 @@ export const processTurn = async (
     const simData = JSON.parse(response.text) as SimulationResponse;
 
     // 2. Generate Image for Street View
-    // Using classic gemini-pro for images too if available (it often handles text-to-image prompts better on legacy keys by just describing them or skipping gracefully)
-    // We try/catch block ensures game doesn't crash if image gen fails
     let generatedImageBase64 = currentState.windows.streetView.image;
 
     try {
@@ -174,20 +176,15 @@ export const processTurn = async (
             No text.
         `;
         
-        // Attempt to use the same model. If it's text-only, this block might fail or return text, caught below.
-        // For strict image gen on legacy keys, we skip or use placeholders to be safe.
-        // Uncomment below if you want to try:
-        /* 
+        // Attempt image generation
+        // Using same model for simplicity; in production use specialized image model
         const imageResponse = await ai.models.generateContent({
-            model: 'gemini-pro', 
+            model: 'gemini-1.5-flash', 
             contents: { parts: [{ text: imagePrompt }] }
         });
-        */
-       
-       // For now, keeping old image to ensure stability on legacy keys
         
     } catch (imgError) {
-        console.warn("Image generation skipped for legacy compatibility:", imgError);
+        console.warn("Image generation skipped:", imgError);
     }
 
     simData.windows.streetView.image = generatedImageBase64;
