@@ -4,12 +4,13 @@ import { GameState, SimulationResponse, TurnInput, SceneType } from "../types";
 import { SCENE_TITLES } from "../constants";
 
 // Initialize Gemini Client
-// CRITICAL: Vercel (Vite) requires import.meta.env.VITE_API_KEY
-// We use || process.env.API_KEY just as a fallback for other environments
+// CRITICAL FIX: Use import.meta.env.VITE_API_KEY for Vercel/Production.
+// The previous 'process.env.API_KEY' only works in local Node.js, not in the browser.
 const apiKey = import.meta.env.VITE_API_KEY || process.env.API_KEY;
 
 if (!apiKey) {
-  console.warn("API Key is missing! Game will not generate text. Please check Vercel Environment Variables.");
+  console.error("FATAL ERROR: API Key is missing. Game cannot contact the AI model.");
+  console.error("Please check Vercel Settings -> Environment Variables -> VITE_API_KEY");
 }
 
 const ai = new GoogleGenAI({ apiKey: apiKey || '' });
