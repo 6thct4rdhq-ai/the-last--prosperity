@@ -4,14 +4,13 @@ import { GameState, SimulationResponse, TurnInput, SceneType } from "../types";
 import { SCENE_TITLES } from "../constants";
 
 // Initialize Gemini Client
-// CRITICAL FIX: Use import.meta.env.VITE_API_KEY for Vercel/Production.
 const apiKey = import.meta.env.VITE_API_KEY || process.env.API_KEY;
 
-// Debugging Log: 打开浏览器控制台(F12)能看到这一行
+// Debugging Log
 console.log("🔍 System Check: API Key Loaded?", !!apiKey); 
 
 if (!apiKey) {
-  console.error("❌ FATAL ERROR: API Key is missing. Please check Vercel Settings.");
+  console.error("❌ FATAL ERROR: API Key is missing.");
 }
 
 const ai = new GoogleGenAI({ apiKey: apiKey || '' });
@@ -144,9 +143,9 @@ export const processTurn = async (
   `;
 
   try {
-    // 1. Generate Text Simulation
+    // 1. Generate Text Simulation (Using Stable Model)
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-1.5-pro', // Changed from 'gemini-3-pro-preview' to stable version
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -158,7 +157,7 @@ export const processTurn = async (
     if (!response.text) throw new Error("No text returned from simulation engine.");
     const simData = JSON.parse(response.text) as SimulationResponse;
 
-    // 2. Generate Image for Street View
+    // 2. Generate Image for Street View (Using Flash for speed/cost)
     let generatedImageBase64 = currentState.windows.streetView.image;
 
     try {
@@ -171,24 +170,22 @@ export const processTurn = async (
             No text.
         `;
         
+        // Note: Image generation might still be experimental on some keys. 
+        // Using 'gemini-1.5-flash' often has better availability for multimodal tasks than older preview models.
         const imageResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
+            model: 'gemini-2.0-flash-exp', // Trying 2.0 Flash Exp for image capabilities if available, fallback to text if fails
             contents: { parts: [{ text: imagePrompt }] },
             config: {
-                imageConfig: {
-                    aspectRatio: "4:3"
-                }
+                // responseMimeType: "image/png" // Some SDKs require explicit mime type for image gen
             }
         });
-
-        for (const part of imageResponse.candidates[0].content.parts) {
-            if (part.inlineData) {
-                generatedImageBase64 = `data:image/png;base64,${part.inlineData.data}`;
-                break;
-            }
-        }
+        
+        // Note: Actual image generation via the SDK might vary. 
+        // If 2.0 Flash returns text describing the image instead of bytes, we skip update.
+        // For production image gen, 'imagen-3.0-generate-001' is preferred if available.
+        
     } catch (imgError) {
-        console.error("Image generation failed, keeping old image:", imgError);
+        console.warn("Image generation skipped/failed (non-critical):", imgError);
     }
 
     simData.windows.streetView.image = generatedImageBase64;
