@@ -4,9 +4,10 @@ import { GameState, SimulationResponse, TurnInput, SceneType } from "../types";
 import { SCENE_TITLES } from "../constants";
 
 // Initialize Gemini Client
+// CRITICAL: Keep using import.meta.env for Vercel
 const apiKey = import.meta.env.VITE_API_KEY || process.env.API_KEY;
 
-// Debugging Log
+// Debug Log
 console.log("🔍 System Check: API Key Loaded?", !!apiKey); 
 
 if (!apiKey) {
@@ -143,9 +144,10 @@ export const processTurn = async (
   `;
 
   try {
-    // 1. Generate Text Simulation (Using Flash - Safer & Faster)
+    // 1. Generate Text Simulation
+    // CHANGED: Using 'gemini-pro' (classic) to avoid 404s on older keys
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // CHANGED: 'pro' -> 'flash' to fix 404 error
+      model: 'gemini-pro', 
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -158,6 +160,8 @@ export const processTurn = async (
     const simData = JSON.parse(response.text) as SimulationResponse;
 
     // 2. Generate Image for Street View
+    // Using classic gemini-pro for images too if available (it often handles text-to-image prompts better on legacy keys by just describing them or skipping gracefully)
+    // We try/catch block ensures game doesn't crash if image gen fails
     let generatedImageBase64 = currentState.windows.streetView.image;
 
     try {
@@ -170,17 +174,20 @@ export const processTurn = async (
             No text.
         `;
         
-        // Try reliable image model or fallback gracefully
+        // Attempt to use the same model. If it's text-only, this block might fail or return text, caught below.
+        // For strict image gen on legacy keys, we skip or use placeholders to be safe.
+        // Uncomment below if you want to try:
+        /* 
         const imageResponse = await ai.models.generateContent({
-            model: 'gemini-1.5-flash', // Using flash for stability
+            model: 'gemini-pro', 
             contents: { parts: [{ text: imagePrompt }] }
         });
-        
-        // Note: Real image generation would use 'imagen-3.0' or specific endpoints.
-        // If the text model returns a description instead of an image, we handle it silently.
+        */
+       
+       // For now, keeping old image to ensure stability on legacy keys
         
     } catch (imgError) {
-        console.warn("Image generation update skipped:", imgError);
+        console.warn("Image generation skipped for legacy compatibility:", imgError);
     }
 
     simData.windows.streetView.image = generatedImageBase64;
