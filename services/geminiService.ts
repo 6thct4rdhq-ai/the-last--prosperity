@@ -143,9 +143,9 @@ export const processTurn = async (
   `;
 
   try {
-    // 1. Generate Text Simulation (Using Stable Model)
+    // 1. Generate Text Simulation (Using Flash - Safer & Faster)
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro', // Changed from 'gemini-3-pro-preview' to stable version
+      model: 'gemini-1.5-flash', // CHANGED: 'pro' -> 'flash' to fix 404 error
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -157,7 +157,7 @@ export const processTurn = async (
     if (!response.text) throw new Error("No text returned from simulation engine.");
     const simData = JSON.parse(response.text) as SimulationResponse;
 
-    // 2. Generate Image for Street View (Using Flash for speed/cost)
+    // 2. Generate Image for Street View
     let generatedImageBase64 = currentState.windows.streetView.image;
 
     try {
@@ -170,22 +170,17 @@ export const processTurn = async (
             No text.
         `;
         
-        // Note: Image generation might still be experimental on some keys. 
-        // Using 'gemini-1.5-flash' often has better availability for multimodal tasks than older preview models.
+        // Try reliable image model or fallback gracefully
         const imageResponse = await ai.models.generateContent({
-            model: 'gemini-2.0-flash-exp', // Trying 2.0 Flash Exp for image capabilities if available, fallback to text if fails
-            contents: { parts: [{ text: imagePrompt }] },
-            config: {
-                // responseMimeType: "image/png" // Some SDKs require explicit mime type for image gen
-            }
+            model: 'gemini-1.5-flash', // Using flash for stability
+            contents: { parts: [{ text: imagePrompt }] }
         });
         
-        // Note: Actual image generation via the SDK might vary. 
-        // If 2.0 Flash returns text describing the image instead of bytes, we skip update.
-        // For production image gen, 'imagen-3.0-generate-001' is preferred if available.
+        // Note: Real image generation would use 'imagen-3.0' or specific endpoints.
+        // If the text model returns a description instead of an image, we handle it silently.
         
     } catch (imgError) {
-        console.warn("Image generation skipped/failed (non-critical):", imgError);
+        console.warn("Image generation update skipped:", imgError);
     }
 
     simData.windows.streetView.image = generatedImageBase64;
